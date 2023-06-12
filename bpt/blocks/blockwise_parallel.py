@@ -13,10 +13,10 @@ from flax.linen import combine_masks, make_causal_mask
 from jax import lax
 from jax import numpy as jnp
 
-
+# Gaussian Error Linear Unit (GELU) activation function .  It takes an input tensor x and applies two operations to it: multiplying x by the sigmoid of 1.702 * x . 
 def quick_gelu(x):
     return x * jax.nn.sigmoid(1.702 * x)
-
+#The ACT2FN dictionary maps activation function names to their corresponding functions
 ACT2FN = {
     "gelu": partial(nn.gelu, approximate=False),
     "relu": nn.relu,
@@ -25,6 +25,11 @@ ACT2FN = {
     "gelu_new": partial(nn.gelu, approximate=True),
     "quick_gelu": quick_gelu,
 }
+""" 
+When training a deep learning model, there are certain computations that need to be performed multiple times, such as calculating gradients. 
+These computations can be memory-intensive Checkpointing helps address this issue by storing intermediate results on disk instead of keeping them all in memory. 
+This way, memory usage can be reduced at the cost of additional computation time needed to read from and write to disk.
+"""
 
 def get_gradient_checkpoint_policy(name):
     return {
@@ -33,14 +38,17 @@ def get_gradient_checkpoint_policy(name):
         'dots_saveable': jax.checkpoint_policies.dots_saveable,
         'dots_with_no_batch_dims_saveable': jax.checkpoint_policies.dots_with_no_batch_dims_saveable,
     }[name]
-
+#to mask certain elements in computation  typically in attention mechanisms.
 MASK_VALUE = -1e10
-
+# represent the size or length of each chunk for the query and key tensors
 Q_CHUNK_SIZE = 1024
 K_CHUNK_SIZE = 1024
-
+"""
+The dim value controls the number of features or components used to represent each position in the input sequence. 
+"""
 def create_sinusoidal_positions(num_pos, dim):
     inv_freq = 1.0 / (10000 ** (np.arange(0, dim, 2) / dim))
+    #performs an element-wise multiplication between np.arange(num_pos) and inv_freq.
     sinusoid_inp = np.einsum("i , j -> i j", np.arange(num_pos), inv_freq).astype("float32")
     sin, cos = np.sin(sinusoid_inp), np.cos(sinusoid_inp)
 
