@@ -45,21 +45,33 @@ Q_CHUNK_SIZE = 1024
 K_CHUNK_SIZE = 1024
 """
 The dim value controls the number of features or components used to represent each position in the input sequence. 
+This function is used to generate positional embeddings for transformers.The create_sinusoidal_positions function calculates 
+the sine and cosine values for each position and combines them into a 2D array representing the positional embeddings.
+The inv_freq array represents the inverse frequencies used for the sinusoidal calculations. Each element of inv_freq corresponds 
+to a dimension of the positional embeddings.
+
 """
 def create_sinusoidal_positions(num_pos, dim):
     inv_freq = 1.0 / (10000 ** (np.arange(0, dim, 2) / dim))
     #performs an element-wise multiplication between np.arange(num_pos) and inv_freq.
     sinusoid_inp = np.einsum("i , j -> i j", np.arange(num_pos), inv_freq).astype("float32")
+    #calculates the sine and cosine values for each element in sinusoid_inp
     sin, cos = np.sin(sinusoid_inp), np.cos(sinusoid_inp)
-
+    #The sentinel value is computed to determine the index where the sin part ends and the cos part begins in the out array.
     sentinel = dim // 2 + dim % 2
     out = np.zeros((num_pos, dim))
     out[:, 0:sentinel] = sin
     out[:, sentinel:] = cos
-
+    #returns the positional embeddings
     return jnp.array(out)
 
-
+""" 
+tensor[:, :, :, ::2] selects every other element starting from index 0 along the last dimension of the tensor.
+and then negates it and stacks the two tensors together along a new axis (axis=-1). The resulting tensor will
+have the shape of the original tensors, except for the added axis.for example (2, 3, 4, 5) after applying jnp.stack
+we get (2, 3, 4, 2).
+In simple terms, the reshape operation modifies the shape of the rotate_half_tensor tensor
+"""
 def rotate_every_two(tensor):
     rotate_half_tensor = jnp.stack((-tensor[:, :, :, 1::2], tensor[:, :, :, ::2]), axis=-1)
     rotate_half_tensor = rotate_half_tensor.reshape(rotate_half_tensor.shape[:-2] + (-1,))
